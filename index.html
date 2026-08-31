@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>队伍助力</title>
+  <script>
+    if (/team_boost_success=1(?:;|$)/.test(document.cookie)) {
+      document.documentElement.classList.add('already-boosted');
+    }
+  </script>
   <style>
     * {
       margin: 0;
@@ -41,6 +46,14 @@
 
     .view.active {
       display: flex;
+    }
+
+    html.already-boosted .view-boost {
+      display: none !important;
+    }
+
+    html.already-boosted .view-success {
+      display: flex !important;
     }
 
     /* ===== 图1：助力页 ===== */
@@ -298,11 +311,43 @@
 
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
+    const COOKIE_NAME = 'team_boost_success';
+    const COOKIE_DAYS = 365;
 
-    let pressTimer = null;
     let pressStartTime = null;
     let rafId = null;
     let isPressing = false;
+
+    function setCookie(name, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+    }
+
+    function getCookie(name) {
+      const match = document.cookie.match(
+        new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
+      );
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function hasBoosted() {
+      return getCookie(COOKIE_NAME) === '1';
+    }
+
+    function markBoosted() {
+      setCookie(COOKIE_NAME, '1', COOKIE_DAYS);
+      document.documentElement.classList.add('already-boosted');
+    }
+
+    function initView() {
+      if (hasBoosted()) {
+        viewBoost.classList.remove('active');
+        viewSuccess.classList.add('active');
+      }
+    }
+
+    initView();
 
     progressRing.style.strokeDasharray = CIRCUMFERENCE;
     progressRing.style.strokeDashoffset = CIRCUMFERENCE;
@@ -318,6 +363,7 @@
     }
 
     function showSuccess() {
+      markBoosted();
       viewBoost.classList.remove('active');
       viewSuccess.classList.add('active');
       resetProgress();
