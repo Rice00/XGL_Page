@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>队伍助力</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #fff;
+      min-height: 100%;
+      min-height: 100dvh;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100dvh;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100dvh;
+      padding: calc(24px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    /* ===== 图1：助力页 ===== */
+    .team-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .team-photo {
+      width: 100%;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .team-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .team-photo-label {
+      font-size: 16px;
+      font-weight: 500;
+      color: #999;
+    }
+
+    .team-info {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 40px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #333;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .team-info-title {
+      font-weight: 600;
+    }
+
+    /* 长按助力区域 */
+    .boost-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .boost-ring-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .boost-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 200px;
+      transform: rotate(-90deg);
+    }
+
+    .boost-ring circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .boost-ring .track {
+      stroke: #ddd;
+    }
+
+    .boost-ring .progress {
+      stroke: #000;
+      stroke-dasharray: 565.48;
+      stroke-dashoffset: 565.48;
+      transition: stroke-dashoffset 0.05s linear;
+      stroke-linecap: round;
+    }
+
+    .boost-btn {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: none;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      font-size: 18px;
+      font-weight: 500;
+      color: #000;
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 16px;
+      z-index: 1;
+      transition: background 0.15s;
+    }
+
+    .boost-btn:active,
+    .boost-btn.pressing {
+      background: #f5f5f5;
+    }
+
+    /* 弧形箭头装饰 */
+    .arrow-deco {
+      position: absolute;
+      right: -30px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 60px;
+      height: 120px;
+      pointer-events: none;
+    }
+
+    /* ===== 图2：成功页 ===== */
+    .success-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      margin-top: 80px;
+      margin-bottom: 0;
+      text-align: center;
+    }
+
+    .success-icon-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .success-heart {
+      width: 180px;
+      height: 180px;
+    }
+
+    /* ===== 关闭按钮 ===== */
+    .close-btn {
+      width: 100%;
+      max-width: 320px;
+      height: 48px;
+      border: none;
+      background: #f5f5f5;
+      border-radius: 24px;
+      font-size: 16px;
+      color: #333;
+      cursor: pointer;
+      margin-top: auto;
+      transition: background 0.15s;
+    }
+
+    .close-btn:active {
+      background: #e8e8e8;
+    }
+
+    /* 成功页入场动画 */
+    .view-success.active .success-title {
+      animation: fadeInDown 0.5s ease;
+    }
+
+    .view-success.active .success-heart {
+      animation: scaleIn 0.6s ease 0.2s both;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <!-- 图1：助力页 -->
+    <div class="view view-boost active" id="viewBoost">
+      <h1 class="team-name">队伍名称</h1>
+
+      <div class="team-photo">
+        <span class="team-photo-label">队伍照片</span>
+      </div>
+
+      <div class="team-info">
+        <div class="team-info-title">团队基本信息：</div>
+        <div>名称与成立时间：明确团队全称及成立年份。</div>
+      </div>
+
+      <div class="boost-area">
+        <div class="boost-ring-container">
+          <svg class="boost-ring" viewBox="0 0 200 200">
+            <circle class="track" cx="100" cy="100" r="90" />
+            <circle class="progress" id="progressRing" cx="100" cy="100" r="90" />
+          </svg>
+          <button class="boost-btn" id="boostBtn">长按为他助力</button>
+          <svg class="arrow-deco" viewBox="0 0 60 120" fill="none" stroke="#000" stroke-width="3">
+            <path d="M50,10 C60,40 60,80 30,110" stroke-linecap="round" />
+            <polygon points="22,100 30,115 38,105" fill="#000" stroke="none" />
+          </svg>
+        </div>
+      </div>
+
+      <button class="close-btn" id="closeBtnBoost">关闭</button>
+    </div>
+
+    <!-- 图2：成功页 -->
+    <div class="view view-success" id="viewSuccess">
+      <h1 class="success-title">助力成功</h1>
+
+      <div class="success-icon-area">
+        <svg class="success-heart" viewBox="0 0 180 180" fill="none" stroke="#000" stroke-width="3">
+          <path d="M90,155 C90,155 20,110 20,65 C20,40 38,25 58,25 C72,25 82,33 90,45 C98,33 108,25 122,25 C142,25 160,40 160,65 C160,110 90,155 90,155Z" />
+          <polyline points="55,85 75,105 120,60" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+
+      <button class="close-btn" id="closeBtnSuccess">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    const viewBoost = document.getElementById('viewBoost');
+    const viewSuccess = document.getElementById('viewSuccess');
+    const boostBtn = document.getElementById('boostBtn');
+    const progressRing = document.getElementById('progressRing');
+    const closeBtnBoost = document.getElementById('closeBtnBoost');
+    const closeBtnSuccess = document.getElementById('closeBtnSuccess');
+
+    const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
+    const HOLD_DURATION = 2000; // 长按 2 秒完成助力
+
+    let pressTimer = null;
+    let pressStartTime = null;
+    let rafId = null;
+    let isPressing = false;
+
+    progressRing.style.strokeDasharray = CIRCUMFERENCE;
+    progressRing.style.strokeDashoffset = CIRCUMFERENCE;
+
+    function setProgress(ratio) {
+      const offset = CIRCUMFERENCE * (1 - Math.min(ratio, 1));
+      progressRing.style.strokeDashoffset = offset;
+    }
+
+    function resetProgress() {
+      setProgress(0);
+      boostBtn.classList.remove('pressing');
+    }
+
+    function showSuccess() {
+      viewBoost.classList.remove('active');
+      viewSuccess.classList.add('active');
+      resetProgress();
+    }
+
+    function updateProgress() {
+      if (!isPressing) return;
+      const elapsed = Date.now() - pressStartTime;
+      const ratio = elapsed / HOLD_DURATION;
+      setProgress(ratio);
+
+      if (ratio >= 1) {
+        stopPress();
+        showSuccess();
+        return;
+      }
+      rafId = requestAnimationFrame(updateProgress);
+    }
+
+    function startPress() {
+      if (isPressing) return;
+      isPressing = true;
+      pressStartTime = Date.now();
+      boostBtn.classList.add('pressing');
+      rafId = requestAnimationFrame(updateProgress);
+    }
+
+    function stopPress() {
+      isPressing = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      if (!viewSuccess.classList.contains('active')) {
+        resetProgress();
+      }
+    }
+
+    // 鼠标事件
+    boostBtn.addEventListener('mousedown', startPress);
+    boostBtn.addEventListener('mouseup', stopPress);
+    boostBtn.addEventListener('mouseleave', stopPress);
+
+    // 触摸事件
+    boostBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      startPress();
+    }, { passive: false });
+
+    boostBtn.addEventListener('touchend', stopPress);
+    boostBtn.addEventListener('touchcancel', stopPress);
+
+    // 关闭按钮
+    closeBtnBoost.addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.close();
+      }
+    });
+
+    closeBtnSuccess.addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.close();
+      }
+    });
+  </script>
+</body>
+</html>
