@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#eef2ff">
   <title>队伍助力</title>
   <script>
     if (/team_boost_success=1(?:;|$)/.test(document.cookie)) {
@@ -11,6 +11,18 @@
     }
   </script>
   <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-bg: #eef2ff;
+      --success: #10b981;
+      --success-light: #34d399;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --card-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
+      --radius: 16px;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -23,17 +35,42 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #fff;
+      background: linear-gradient(165deg, #eef2ff 0%, #f8fafc 45%, #fff 100%);
       min-height: 100%;
       min-height: 100dvh;
+      color: var(--text);
     }
 
     .app {
       width: 100%;
       min-height: 100dvh;
-      background: #fff;
       position: relative;
       overflow: hidden;
+    }
+
+    .app::before,
+    .app::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app::before {
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+      top: -80px;
+      right: -60px;
+    }
+
+    .app::after {
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(129, 140, 248, 0.1) 0%, transparent 70%);
+      bottom: 120px;
+      left: -40px;
     }
 
     .view {
@@ -41,7 +78,9 @@
       flex-direction: column;
       align-items: center;
       min-height: 100dvh;
-      padding: calc(24px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+      padding: calc(28px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+      position: relative;
+      z-index: 1;
     }
 
     .view.active {
@@ -58,11 +97,26 @@
 
     /* ===== 图1：助力页 ===== */
     .team-name {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
-      color: #000;
-      margin-bottom: 20px;
+      color: var(--text);
+      margin-bottom: 24px;
       text-align: center;
+      letter-spacing: 0.02em;
+      position: relative;
+      padding-bottom: 12px;
+    }
+
+    .team-name::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 2px;
     }
 
     .team-photo {
@@ -72,9 +126,18 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 16px;
-      background: #f5f5f5;
-      border-radius: 8px;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
+      border-radius: var(--radius);
       overflow: hidden;
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+
+    .team-photo::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 60%, rgba(99, 102, 241, 0.06) 100%);
     }
 
     .team-photo img {
@@ -84,24 +147,41 @@
     }
 
     .team-photo-label {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
-      color: #999;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .team-photo-label::before {
+      content: "";
+      width: 48px;
+      height: 48px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23818cf8' stroke-width='1.5'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E") center/contain no-repeat;
+      opacity: 0.7;
     }
 
     .team-info {
       width: 100%;
-      padding: 14px 16px;
-      margin-bottom: 40px;
-      font-size: 15px;
-      line-height: 1.7;
-      color: #333;
-      background: #f9f9f9;
-      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 32px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border-left: 4px solid var(--primary);
     }
 
     .team-info-title {
       font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-size: 15px;
     }
 
     /* 长按助力区域 */
@@ -112,23 +192,44 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      position: relative;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+    }
+
+    .boost-hint {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
     }
 
     .boost-ring-container {
       position: relative;
-      width: 200px;
-      height: 200px;
+      width: 220px;
+      height: 220px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
+    .boost-ring-container::before {
+      content: "";
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 2px solid rgba(99, 102, 241, 0.15);
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.06); opacity: 0.2; }
+    }
+
     .boost-ring {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 10px;
+      left: 10px;
       width: 200px;
       height: 200px;
       transform: rotate(-90deg);
@@ -136,28 +237,31 @@
 
     .boost-ring circle {
       fill: none;
-      stroke-width: 6;
+      stroke-width: 5;
     }
 
     .boost-ring .track {
-      stroke: #ddd;
+      stroke: rgba(99, 102, 241, 0.12);
     }
 
     .boost-ring .progress {
-      stroke: #000;
+      stroke: url(#progressGradient);
       stroke-dasharray: 565.48;
       stroke-dashoffset: 565.48;
       transition: stroke-dashoffset 0.05s linear;
       stroke-linecap: round;
+      filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
     }
 
     .boost-btn {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       border-radius: 50%;
       border: none;
-      background: #fff;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+      background: linear-gradient(145deg, #fff 0%, #f8fafc 100%);
+      box-shadow:
+        0 8px 32px rgba(99, 102, 241, 0.18),
+        0 0 0 1px rgba(99, 102, 241, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -165,91 +269,174 @@
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
-      font-size: 18px;
-      font-weight: 500;
-      color: #000;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
       text-align: center;
-      line-height: 1.4;
-      padding: 0 16px;
+      line-height: 1.5;
+      padding: 0 20px;
       z-index: 1;
-      transition: background 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
 
     .boost-btn:active,
     .boost-btn.pressing {
-      background: #f5f5f5;
-    }
-
-    /* 弧形箭头装饰 */
-    .arrow-deco {
-      position: absolute;
-      right: -30px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 60px;
-      height: 120px;
-      pointer-events: none;
+      transform: scale(0.96);
+      box-shadow:
+        0 4px 16px rgba(99, 102, 241, 0.25),
+        0 0 0 1px rgba(99, 102, 241, 0.15);
     }
 
     /* ===== 图2：成功页 ===== */
     .success-title {
       font-size: 28px;
       font-weight: 700;
-      color: #000;
-      margin-top: 80px;
-      margin-bottom: 0;
+      color: var(--text);
+      margin-top: 60px;
+      margin-bottom: 8px;
       text-align: center;
+      letter-spacing: 0.04em;
     }
 
     .success-icon-area {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       width: 100%;
+      gap: 24px;
     }
 
-    .success-heart {
-      width: 180px;
-      height: 180px;
+    .success-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      letter-spacing: 0.06em;
+    }
+
+    /* 流行对勾动画 */
+    .success-checkmark-wrap {
+      width: 120px;
+      height: 120px;
+    }
+
+    .success-checkmark {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      display: block;
+      stroke-width: 2;
+      stroke: #fff;
+      stroke-miterlimit: 10;
+      box-shadow: inset 0 0 0 var(--success);
+    }
+
+    .checkmark-circle {
+      stroke-dasharray: 166;
+      stroke-dashoffset: 166;
+      stroke-width: 2;
+      stroke: var(--success);
+      stroke-miterlimit: 10;
+      fill: none;
+    }
+
+    .checkmark-check {
+      transform-origin: 50% 50%;
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      stroke: #fff;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .success-checkmark-wrap.play .success-checkmark {
+      animation: checkmark-fill 0.35s ease-in-out 0.45s forwards;
+    }
+
+    .success-checkmark-wrap.play .checkmark-circle {
+      animation: checkmark-stroke 0.55s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .success-checkmark-wrap.play .checkmark-check {
+      animation: checkmark-stroke 0.25s cubic-bezier(0.65, 0, 0.45, 1) 0.65s forwards;
+    }
+
+    .success-checkmark-wrap.play {
+      animation: checkmark-scale 0.25s ease-in-out 0.85s both;
+    }
+
+    @keyframes checkmark-stroke {
+      100% { stroke-dashoffset: 0; }
+    }
+
+    @keyframes checkmark-scale {
+      0%, 100% { transform: none; }
+      50% { transform: scale(1.08); }
+    }
+
+    @keyframes checkmark-fill {
+      100% { box-shadow: inset 0 0 0 60px var(--success); }
     }
 
     /* ===== 关闭按钮 ===== */
     .close-btn {
       width: 100%;
       max-width: 320px;
-      height: 48px;
+      height: 50px;
       border: none;
-      background: #f5f5f5;
-      border-radius: 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: 25px;
       font-size: 16px;
-      color: #333;
+      font-weight: 500;
+      color: #fff;
       cursor: pointer;
       margin-top: auto;
-      transition: background 0.15s;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
     }
 
     .close-btn:active {
-      background: #e8e8e8;
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
     }
 
-    /* 成功页入场动画 */
+    .view-success .close-btn {
+      background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .view-success .close-btn:active {
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* 入场动画 */
+    .view-boost.active .team-name,
+    .view-boost.active .team-photo,
+    .view-boost.active .team-info {
+      animation: fadeInUp 0.5s ease both;
+    }
+
+    .view-boost.active .team-photo { animation-delay: 0.08s; }
+    .view-boost.active .team-info { animation-delay: 0.16s; }
+    .view-boost.active .boost-area { animation: fadeInUp 0.5s ease 0.24s both; }
+
     .view-success.active .success-title {
-      animation: fadeInDown 0.5s ease;
+      animation: fadeInDown 0.5s ease both;
     }
 
-    .view-success.active .success-heart {
-      animation: scaleIn 0.6s ease 0.2s both;
+    .view-success.active .success-subtitle {
+      animation: fadeInUp 0.5s ease 0.9s both;
     }
 
     @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-20px); }
+      from { opacity: 0; transform: translateY(-16px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.5); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -272,15 +459,18 @@
       <div class="boost-area">
         <div class="boost-ring-container">
           <svg class="boost-ring" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#818cf8" />
+              </linearGradient>
+            </defs>
             <circle class="track" cx="100" cy="100" r="90" />
             <circle class="progress" id="progressRing" cx="100" cy="100" r="90" />
           </svg>
           <button class="boost-btn" id="boostBtn">长按为他助力</button>
-          <svg class="arrow-deco" viewBox="0 0 60 120" fill="none" stroke="#000" stroke-width="3">
-            <path d="M50,10 C60,40 60,80 30,110" stroke-linecap="round" />
-            <polygon points="22,100 30,115 38,105" fill="#000" stroke="none" />
-          </svg>
         </div>
+        <p class="boost-hint">长按 2 秒完成助力</p>
       </div>
 
       <button class="close-btn" id="closeBtnBoost">关闭</button>
@@ -291,10 +481,13 @@
       <h1 class="success-title">助力成功</h1>
 
       <div class="success-icon-area">
-        <svg class="success-heart" viewBox="0 0 180 180" fill="none" stroke="#000" stroke-width="3">
-          <path d="M90,155 C90,155 20,110 20,65 C20,40 38,25 58,25 C72,25 82,33 90,45 C98,33 108,25 122,25 C142,25 160,40 160,65 C160,110 90,155 90,155Z" />
-          <polyline points="55,85 75,105 120,60" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <div class="success-checkmark-wrap" id="successCheckmark">
+          <svg class="success-checkmark" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+          </svg>
+        </div>
+        <p class="success-subtitle">感谢你的支持</p>
       </div>
 
       <button class="close-btn" id="closeBtnSuccess">关闭</button>
@@ -308,6 +501,7 @@
     const progressRing = document.getElementById('progressRing');
     const closeBtnBoost = document.getElementById('closeBtnBoost');
     const closeBtnSuccess = document.getElementById('closeBtnSuccess');
+    const successCheckmark = document.getElementById('successCheckmark');
 
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
@@ -340,10 +534,18 @@
       document.documentElement.classList.add('already-boosted');
     }
 
+    function replayCheckAnimation() {
+      if (!successCheckmark) return;
+      successCheckmark.classList.remove('play');
+      void successCheckmark.offsetWidth;
+      successCheckmark.classList.add('play');
+    }
+
     function initView() {
       if (hasBoosted()) {
         viewBoost.classList.remove('active');
         viewSuccess.classList.add('active');
+        replayCheckAnimation();
       }
     }
 
@@ -367,6 +569,7 @@
       viewBoost.classList.remove('active');
       viewSuccess.classList.add('active');
       resetProgress();
+      replayCheckAnimation();
     }
 
     function updateProgress() {
