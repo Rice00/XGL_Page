@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抽奖环节</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #60a5fa;
+      --accent: #f59e0b;
+      --text: #0f172a;
+      --text-secondary: #64748b;
+      --surface: #ffffff;
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 20px;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(37, 99, 235, 0.1), transparent 32%),
+        radial-gradient(circle at 85% 90%, rgba(245, 158, 11, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      color: var(--text);
+    }
+
+    .panel {
+      width: min(1400px, 100%);
+      min-height: calc(100vh - 40px);
+      padding: clamp(40px, 5vh, 72px) clamp(32px, 6vw, 96px) clamp(48px, 6vh, 80px);
+      background: var(--surface);
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      border-radius: clamp(20px, 2vw, 32px);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent) 100%);
+    }
+
+    .page-title {
+      font-size: clamp(36px, 4.5vw, 56px);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .title-line {
+      width: clamp(56px, 6vw, 80px);
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      margin-bottom: clamp(32px, 5vh, 64px);
+    }
+
+    .number-wrap {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: clamp(24px, 4vh, 48px) 0;
+      position: relative;
+      min-height: clamp(280px, 45vh, 520px);
+    }
+
+    .number-wrap::before {
+      content: "";
+      position: absolute;
+      width: clamp(320px, 42vw, 560px);
+      height: clamp(320px, 42vw, 560px);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 68%);
+      pointer-events: none;
+    }
+
+    .number-display {
+      font-size: clamp(120px, 24vh, 280px);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      min-height: 1.05em;
+      transition: color 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+      user-select: none;
+      position: relative;
+      z-index: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .number-display.rolling {
+      color: var(--primary);
+      transform: scale(1.03);
+      filter: blur(0.3px);
+    }
+
+    .number-display.locked {
+      color: var(--primary-dark);
+      transform: scale(1);
+      filter: none;
+      text-shadow: 0 8px 32px rgba(37, 99, 235, 0.18);
+    }
+
+    .draw-btn {
+      min-width: clamp(240px, 22vw, 320px);
+      height: clamp(56px, 6vh, 68px);
+      padding: 0 48px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+      color: #fff;
+      font-size: clamp(17px, 1.6vw, 22px);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      margin-top: clamp(16px, 3vh, 32px);
+    }
+
+    .draw-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px rgba(37, 99, 235, 0.34);
+    }
+
+    .draw-btn:active {
+      transform: translateY(0);
+    }
+
+    .draw-btn.stop {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      box-shadow: 0 16px 36px rgba(220, 38, 38, 0.28);
+    }
+
+    .draw-btn.stop:hover {
+      box-shadow: 0 20px 40px rgba(220, 38, 38, 0.32);
+    }
+
+    .draw-btn.retry {
+      background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
+    }
+
+    .draw-btn.retry:hover {
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.28);
+    }
+
+    @media (min-width: 1200px) {
+      body {
+        padding: 28px 32px;
+      }
+
+      .panel {
+        min-height: calc(100vh - 56px);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 12px;
+      }
+
+      .panel {
+        min-height: calc(100vh - 24px);
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1 class="page-title">抽奖环节</h1>
+    <div class="title-line"></div>
+
+    <div class="number-wrap">
+      <div class="number-display" id="numberDisplay">--</div>
+    </div>
+
+    <button class="draw-btn" id="drawBtn" type="button">开始抽奖</button>
+  </div>
+
+  <script>
+    const RANDOM_MIN = 1;
+    const RANDOM_MAX = 500;
+    const ROLL_INTERVAL = 45;
+
+    const numberDisplay = document.getElementById('numberDisplay');
+    const drawBtn = document.getElementById('drawBtn');
+
+    let rollingTimer = null;
+    let isRolling = false;
+    let finalValue = null;
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function setDisplay(value) {
+      numberDisplay.textContent = value;
+    }
+
+    function updateUI() {
+      if (isRolling) {
+        drawBtn.textContent = '停止';
+        drawBtn.className = 'draw-btn stop';
+        return;
+      }
+
+      if (finalValue !== null) {
+        drawBtn.textContent = '再抽一次';
+        drawBtn.className = 'draw-btn retry';
+        return;
+      }
+
+      drawBtn.textContent = '开始抽奖';
+      drawBtn.className = 'draw-btn';
+    }
+
+    function startRolling() {
+      isRolling = true;
+      finalValue = null;
+      numberDisplay.classList.add('rolling');
+      numberDisplay.classList.remove('locked');
+      updateUI();
+
+      rollingTimer = setInterval(() => {
+        setDisplay(randomInt(RANDOM_MIN, RANDOM_MAX));
+      }, ROLL_INTERVAL);
+    }
+
+    function stopRolling() {
+      clearInterval(rollingTimer);
+      rollingTimer = null;
+      isRolling = false;
+      finalValue = randomInt(RANDOM_MIN, RANDOM_MAX);
+      setDisplay(finalValue);
+      numberDisplay.classList.remove('rolling');
+      numberDisplay.classList.add('locked');
+      updateUI();
+    }
+
+    function resetRound() {
+      finalValue = null;
+      setDisplay('--');
+      numberDisplay.classList.remove('rolling', 'locked');
+      updateUI();
+    }
+
+    drawBtn.addEventListener('click', () => {
+      if (isRolling) {
+        stopRolling();
+        return;
+      }
+
+      if (finalValue !== null) {
+        resetRound();
+        return;
+      }
+
+      startRolling();
+    });
+  </script>
+</body>
+</html>
