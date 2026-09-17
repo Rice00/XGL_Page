@@ -92,6 +92,8 @@
 
     .view-success {
       padding-bottom: calc(var(--bottom-offset) + env(safe-area-inset-bottom));
+      background: url("succes_bg.png") center top / auto 100% no-repeat;
+      background-color: #0a1628;
     }
 
     .view.active {
@@ -134,6 +136,10 @@
 
     html.already-boosted .view-success {
       display: flex !important;
+    }
+
+    html.already-boosted .app::before {
+      display: none;
     }
 
     /* 长按助力区域 */
@@ -233,97 +239,30 @@
     }
 
     /* ===== 图2：成功页 ===== */
-    .success-title {
-      font-size: clamp(24px, 3.6vh, 28px);
-      font-weight: 700;
-      color: var(--text);
-      margin-top: clamp(24px, 6vh, 60px);
-      margin-bottom: 8px;
-      text-align: center;
-      letter-spacing: 0.04em;
-      flex-shrink: 0;
-    }
-
-    .success-icon-area {
-      flex: 1;
+    .success-center {
+      position: absolute;
+      inset: 0;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      gap: clamp(16px, 2.5vh, 24px);
-      min-height: 0;
+      padding: 20px;
+      pointer-events: none;
     }
 
-    .success-subtitle {
-      font-size: clamp(13px, 2vh, 15px);
-      color: var(--text-secondary);
-      letter-spacing: 0.06em;
+    .success-image {
+      width: clamp(220px, 62vw, 360px);
+      height: auto;
+      object-fit: contain;
+      transform: translateY(-50%);
     }
 
-    /* 流行对勾动画 */
-    .success-checkmark-wrap {
-      width: clamp(96px, 16vh, 120px);
-      height: clamp(96px, 16vh, 120px);
+    .view-success.active .success-image {
+      animation: successFadeIn 0.5s ease both;
     }
 
-    .success-checkmark {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      display: block;
-      stroke-width: 2;
-      stroke: #fff;
-      stroke-miterlimit: 10;
-      box-shadow: inset 0 0 0 var(--success);
-    }
-
-    .checkmark-circle {
-      stroke-dasharray: 166;
-      stroke-dashoffset: 166;
-      stroke-width: 2;
-      stroke: var(--success);
-      stroke-miterlimit: 10;
-      fill: none;
-    }
-
-    .checkmark-check {
-      transform-origin: 50% 50%;
-      stroke-dasharray: 48;
-      stroke-dashoffset: 48;
-      stroke: #fff;
-      stroke-width: 3;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .success-checkmark-wrap.play .success-checkmark {
-      animation: checkmark-fill 0.35s ease-in-out 0.45s forwards;
-    }
-
-    .success-checkmark-wrap.play .checkmark-circle {
-      animation: checkmark-stroke 0.55s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-    }
-
-    .success-checkmark-wrap.play .checkmark-check {
-      animation: checkmark-stroke 0.25s cubic-bezier(0.65, 0, 0.45, 1) 0.65s forwards;
-    }
-
-    .success-checkmark-wrap.play {
-      animation: checkmark-scale 0.25s ease-in-out 0.85s both;
-    }
-
-    @keyframes checkmark-stroke {
-      100% { stroke-dashoffset: 0; }
-    }
-
-    @keyframes checkmark-scale {
-      0%, 100% { transform: none; }
-      50% { transform: scale(1.08); }
-    }
-
-    @keyframes checkmark-fill {
-      100% { box-shadow: inset 0 0 0 60px var(--success); }
+    @keyframes successFadeIn {
+      from { opacity: 0; transform: translateY(-50%) scale(0.92); }
+      to { opacity: 1; transform: translateY(-50%) scale(1); }
     }
 
     /* ===== 关闭按钮 ===== */
@@ -355,22 +294,8 @@
       opacity: 0.88;
     }
 
-    /* 入场动画 */
-    .view-success.active .success-title {
-      animation: fadeInDown 0.5s ease both;
-    }
-
-    .view-success.active .success-subtitle {
-      animation: fadeInUp 0.5s ease 0.9s both;
-    }
-
     @keyframes fadeInDown {
       from { opacity: 0; transform: translateY(-16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
@@ -408,18 +333,8 @@
 
     <!-- 图2：成功页 -->
     <div class="view view-success" id="viewSuccess">
-      <div class="view-body">
-        <h1 class="success-title">助力成功</h1>
-
-        <div class="success-icon-area">
-          <div class="success-checkmark-wrap" id="successCheckmark">
-            <svg class="success-checkmark" viewBox="0 0 52 52">
-              <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
-              <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
-            </svg>
-          </div>
-          <p class="success-subtitle">感谢你的支持</p>
-        </div>
+      <div class="success-center">
+        <img src="succes.png" alt="助力成功" class="success-image" id="successImage">
       </div>
 
       <div class="bottom-actions">
@@ -437,7 +352,7 @@
     const progressRing = document.getElementById('progressRing');
     const closeBtnBoost = document.getElementById('closeBtnBoost');
     const closeBtnSuccess = document.getElementById('closeBtnSuccess');
-    const successCheckmark = document.getElementById('successCheckmark');
+    const successImage = document.getElementById('successImage');
 
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
@@ -470,18 +385,18 @@
       document.documentElement.classList.add('already-boosted');
     }
 
-    function replayCheckAnimation() {
-      if (!successCheckmark) return;
-      successCheckmark.classList.remove('play');
-      void successCheckmark.offsetWidth;
-      successCheckmark.classList.add('play');
+    function replaySuccessAnimation() {
+      if (!successImage) return;
+      successImage.style.animation = 'none';
+      void successImage.offsetWidth;
+      successImage.style.animation = '';
     }
 
     function initView() {
       if (hasBoosted()) {
         viewBoost.classList.remove('active');
         viewSuccess.classList.add('active');
-        replayCheckAnimation();
+        replaySuccessAnimation();
       }
     }
 
@@ -505,7 +420,7 @@
       viewBoost.classList.remove('active');
       viewSuccess.classList.add('active');
       resetProgress();
-      replayCheckAnimation();
+      replaySuccessAnimation();
     }
 
     function updateProgress() {
@@ -612,7 +527,6 @@
         document.documentElement.classList.remove('already-boosted');
         viewSuccess.classList.remove('active');
         viewBoost.classList.add('active');
-        successCheckmark.classList.remove('play');
         resetProgress();
       });
     })();
