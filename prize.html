@@ -12,6 +12,12 @@
     :root {
       --design-w: 992;
       --design-h: 1843;
+      /* prizeref.png 布局比例 (992×1843) */
+      --prize-zone-top: 26%;
+      --prize-zone-bottom: 30%;
+      --prize-btn-bottom: 100px;
+      --prize-btn-width: 420px;
+      --prize-btn-height: 84px;
     }
 
     * {
@@ -170,13 +176,14 @@
 
     .prize-numbers {
       position: absolute;
-      left: 50%;
-      top: 46%;
-      transform: translate(-50%, -50%);
+      left: 6%;
+      right: 6%;
+      top: var(--prize-zone-top);
+      bottom: var(--prize-zone-bottom);
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 80%;
+      justify-content: space-evenly;
     }
 
     .prize-number {
@@ -185,17 +192,29 @@
       font-variant-numeric: tabular-nums;
       text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
       text-align: center;
-      line-height: 1.2;
+      line-height: 1.1;
       transition: opacity 0.2s, transform 0.25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .prize-number.is-hidden {
       visibility: hidden;
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+      flex: none;
     }
 
     .prize-number.is-rolling,
     .prize-number.is-fixed {
       visibility: visible;
+      position: relative;
+      flex: 0 0 auto;
+      width: 100%;
     }
 
     .prize-number.is-fixed {
@@ -203,21 +222,18 @@
       transform: scale(1.06);
     }
 
-    .view-prize-5 .prize-numbers { gap: 28px; }
-    .view-prize-5 .prize-number { font-size: 56px; }
+    .view-prize-5 .prize-number { font-size: 72px; }
 
-    .view-prize-3 .prize-numbers { gap: 36px; }
-    .view-prize-3 .prize-number { font-size: 68px; }
+    .view-prize-3 .prize-number { font-size: 118px; }
 
-    .view-prize-1 .prize-numbers { gap: 0; }
-    .view-prize-1 .prize-number { font-size: 96px; }
+    .view-prize-1 .prize-number { font-size: 160px; }
 
     .prize-btn-wrap {
       position: absolute;
       left: 50%;
-      bottom: 100px;
+      bottom: var(--prize-btn-bottom);
       transform: translateX(-50%);
-      width: 420px;
+      width: var(--prize-btn-width);
     }
 
     .prize-btn {
