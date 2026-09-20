@@ -15,9 +15,7 @@
       /* prizeref.png 布局比例 (992×1843) */
       --prize-zone-top: 26%;
       --prize-zone-bottom: 30%;
-      --prize-btn-bottom: 100px;
       --prize-btn-width: 420px;
-      --prize-btn-height: 84px;
     }
 
     * {
@@ -231,9 +229,14 @@
     .prize-btn-wrap {
       position: absolute;
       left: 50%;
-      bottom: var(--prize-btn-bottom);
-      transform: translateX(-50%);
+      top: 50%;
+      transform: translate(-50%, -50%);
       width: var(--prize-btn-width);
+    }
+
+    .prize-btn-wrap.is-hidden {
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .prize-btn {
@@ -275,7 +278,7 @@
           <p class="settings-hint">范围包含上下限。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
           <button class="confirm-btn" id="confirmBtn" type="button">确认</button>
         </div>
-        <p class="key-hint">Z / ← 上一页　X / → 下一页<br>设置页 / 抽奖页：空格 = 确认 / 开奖</p>
+        <p class="key-hint">Z / ← 上一页　X / → 下一页<br>设置页：空格 = 确认　抽奖页：空格 = 开奖 / 下一页</p>
       </section>
 
       <!-- 页面2：三等奖 -->
@@ -315,7 +318,8 @@
     const DESIGN_W = 992;
     const DESIGN_H = 1843;
     const ROLL_INTERVAL = 45;
-    const STAGGER_INTERVAL = 1400; // 依次固定间隔（毫秒）
+    const ROLL_BEFORE_FIX = 200; // 开奖后滚动时长，再自动定格
+    const STAGGER_INTERVAL = 500; // 依次固定间隔（毫秒）
     const LAND_STEPS = 8;
     const LAND_INTERVAL = 55;
 
@@ -339,13 +343,14 @@
     let usedNumbers = new Set();
 
     const prizeStates = {
-      '3': createPrizeState('numbers3', 5),
-      '2': createPrizeState('numbers2', 3),
-      '1': createPrizeState('numbers1', 1),
+      '3': createPrizeState('numbers3', 5, '3'),
+      '2': createPrizeState('numbers2', 3, '2'),
+      '1': createPrizeState('numbers1', 1, '1'),
     };
 
-    function createPrizeState(containerId, count) {
+    function createPrizeState(containerId, count, prizeKey) {
       const container = document.getElementById(containerId);
+      const btnWrap = document.querySelector(`.prize-btn[data-prize="${prizeKey}"]`)?.closest('.prize-btn-wrap');
       const slots = [];
 
       for (let i = 0; i < count; i++) {
@@ -365,11 +370,18 @@
       return {
         containerId,
         count,
+        btnWrap,
         slots,
         phase: 'idle', // idle | rolling | fixing | done
         fixTimers: [],
         picked: [],
       };
+    }
+
+    function setPrizeBtnVisible(state, visible) {
+      if (state.btnWrap) {
+        state.btnWrap.classList.toggle('is-hidden', !visible);
+      }
     }
 
     function scaleStage() {
@@ -466,6 +478,7 @@
         slot.el.textContent = '';
         slot.el.className = 'prize-number is-hidden';
       });
+      setPrizeBtnVisible(state, true);
     }
 
     function resetAllPrizes() {
@@ -524,6 +537,7 @@
 
     function startRolling(state) {
       state.phase = 'rolling';
+      setPrizeBtnVisible(state, false);
       state.slots.forEach((slot) => {
         slot.fixed = false;
         slot.value = null;
@@ -533,6 +547,16 @@
           slot.el.textContent = randomInt(rangeMin, rangeMax);
         }, ROLL_INTERVAL);
       });
+    }
+
+    function startDraw(state) {
+      startRolling(state);
+      const timerId = setTimeout(() => {
+        if (state.phase === 'rolling') {
+          startFixing(state);
+        }
+      }, ROLL_BEFORE_FIX);
+      state.fixTimers.push(timerId);
     }
 
     function startFixing(state) {
@@ -561,9 +585,7 @@
       if (!state) return;
 
       if (state.phase === 'idle') {
-        startRolling(state);
-      } else if (state.phase === 'rolling') {
-        startFixing(state);
+        startDraw(state);
       } else if (state.phase === 'done') {
         nextPage();
       }
