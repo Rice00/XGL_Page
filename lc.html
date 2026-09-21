@@ -4,11 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0a1628">
+  <link rel="icon" href="data:,">
   <title>队伍助力</title>
   <script>
-    if (/team_boost_success=1(?:;|$)/.test(document.cookie)) {
-      document.documentElement.classList.add('already-boosted');
-    }
+    window.PAGE_CONFIG = { key: 'lc', bg: 'lcBG.png' };
+    // file:// 打开时 document.cookie / localStorage 可能直接抛 SecurityError，
+    // 必须各自隔离，否则后面的脚本会整段中断
+    try {
+      if (
+        /team_boost_success=1(?:;|$)/.test(document.cookie) ||
+        new RegExp(`team_boost_success_${window.PAGE_CONFIG.key}=1(?:;|$)`).test(document.cookie)
+      ) {
+        document.documentElement.classList.add('already-boosted');
+      }
+    } catch (e) {}
+    try {
+      if (localStorage.getItem(`team_boost_success_${window.PAGE_CONFIG.key}`) === '1') {
+        document.documentElement.classList.add('already-boosted');
+      }
+    } catch (e) {}
+    document.documentElement.style.setProperty(
+      '--page-bg',
+      `url("${window.PAGE_CONFIG.bg}") center top / auto 100% no-repeat`
+    );
   </script>
   <style>
     :root {
@@ -55,7 +73,7 @@
       height: 100dvh;
       position: relative;
       overflow: hidden;
-      background: url("bg.png") center top / auto 100% no-repeat;
+      background: var(--page-bg);
       background-color: #0a1628;
     }
 
@@ -124,6 +142,7 @@
       right: 0;
       top: var(--actions-top);
       margin-top: 0;
+      z-index: 2;
     }
 
     .view-success .bottom-actions {
@@ -165,6 +184,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .boost-ring-container::before {
@@ -175,6 +199,7 @@
       border-radius: 50%;
       border: 2px solid rgba(245, 158, 11, 0.25);
       animation: pulse-ring 2s ease-in-out infinite;
+      pointer-events: none;
     }
 
     @keyframes pulse-ring {
@@ -188,6 +213,7 @@
       width: 90%;
       height: 90%;
       transform: rotate(-90deg);
+      pointer-events: none;
     }
 
     .boost-ring circle {
@@ -318,7 +344,7 @@
               <circle class="track" cx="100" cy="100" r="90" />
               <circle class="progress" id="progressRing" cx="100" cy="100" r="90" />
             </svg>
-            <button class="boost-btn" id="boostBtn" aria-label="长按为他助力">
+            <button type="button" class="boost-btn" id="boostBtn" aria-label="长按为他助力">
               <img src="btn.png" alt="助力">
             </button>
           </div>
@@ -349,39 +375,63 @@
     const viewBoost = document.getElementById('viewBoost');
     const viewSuccess = document.getElementById('viewSuccess');
     const boostBtn = document.getElementById('boostBtn');
+    const boostTarget = document.querySelector('.boost-ring-container');
     const progressRing = document.getElementById('progressRing');
     const closeBtnBoost = document.getElementById('closeBtnBoost');
     const closeBtnSuccess = document.getElementById('closeBtnSuccess');
     const successImage = document.getElementById('successImage');
 
+    const PAGE_CONFIG = window.PAGE_CONFIG || { key: 'lc', bg: 'lcBG.png' };
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
-    const COOKIE_NAME = 'team_boost_success';
+    const COOKIE_NAME = `team_boost_success_${PAGE_CONFIG.key}`;
     const COOKIE_DAYS = 365;
 
     let pressStartTime = null;
-    let rafId = null;
     let isPressing = false;
+    let ignoreMouseUntil = 0;
 
     function setCookie(name, value, days) {
-      const expires = new Date();
-      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-      document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+      try {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+      } catch (e) {}
     }
 
     function getCookie(name) {
-      const match = document.cookie.match(
-        new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
-      );
-      return match ? decodeURIComponent(match[1]) : null;
+      try {
+        const match = document.cookie.match(
+          new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
+        );
+        return match ? decodeURIComponent(match[1]) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // file:// 下 Cookie 不可用（读写都可能抛异常），用 localStorage 兜底
+    function getStored(name) {
+      try { return localStorage.getItem(name); } catch (e) { return null; }
+    }
+
+    function setStored(name, value) {
+      try { localStorage.setItem(name, value); } catch (e) {}
+    }
+
+    function removeStored(name) {
+      try { localStorage.removeItem(name); } catch (e) {}
     }
 
     function hasBoosted() {
-      return getCookie(COOKIE_NAME) === '1';
+      return getCookie(COOKIE_NAME) === '1'
+        || getCookie('team_boost_success') === '1'
+        || getStored(COOKIE_NAME) === '1';
     }
 
     function markBoosted() {
       setCookie(COOKIE_NAME, '1', COOKIE_DAYS);
+      setStored(COOKIE_NAME, '1');
       document.documentElement.classList.add('already-boosted');
     }
 
@@ -400,19 +450,24 @@
       }
     }
 
-    initView();
+    // 即使读取助力状态失败，也不能影响下面长按事件的绑定
+    try {
+      initView();
+    } catch (e) {
+      console.error('读取助力状态失败，按未助力处理', e);
+    }
 
-    progressRing.style.strokeDasharray = CIRCUMFERENCE;
-    progressRing.style.strokeDashoffset = CIRCUMFERENCE;
+    let pressTimer = null;
 
     function setProgress(ratio) {
+      if (!progressRing) return;
       const offset = CIRCUMFERENCE * (1 - Math.min(ratio, 1));
-      progressRing.style.strokeDashoffset = offset;
+      progressRing.style.strokeDashoffset = String(offset);
     }
 
     function resetProgress() {
       setProgress(0);
-      boostBtn.classList.remove('pressing');
+      boostBtn?.classList.remove('pressing');
     }
 
     function showSuccess() {
@@ -423,63 +478,114 @@
       replaySuccessAnimation();
     }
 
-    function updateProgress() {
+    function tickPress() {
       if (!isPressing) return;
-      const elapsed = Date.now() - pressStartTime;
-      const ratio = elapsed / HOLD_DURATION;
+      const ratio = (Date.now() - pressStartTime) / HOLD_DURATION;
       setProgress(ratio);
-
       if (ratio >= 1) {
-        stopPress();
+        clearInterval(pressTimer);
+        pressTimer = null;
+        isPressing = false;
+        boostBtn?.classList.remove('pressing');
         showSuccess();
-        return;
       }
-      rafId = requestAnimationFrame(updateProgress);
     }
 
     function startPress() {
-      if (isPressing) return;
+      if (isPressing || !boostBtn || !progressRing) return;
+      if (viewBoost.classList.contains('active') === false) return;
       isPressing = true;
       pressStartTime = Date.now();
       boostBtn.classList.add('pressing');
-      rafId = requestAnimationFrame(updateProgress);
+      clearInterval(pressTimer);
+      tickPress();
+      pressTimer = setInterval(tickPress, 16);
     }
 
     function stopPress() {
+      if (!isPressing) return;
       isPressing = false;
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
+      clearInterval(pressTimer);
+      pressTimer = null;
       if (!viewSuccess.classList.contains('active')) {
         resetProgress();
       }
     }
 
-    // 鼠标事件
-    boostBtn.addEventListener('mousedown', startPress);
-    boostBtn.addEventListener('mouseup', stopPress);
-    boostBtn.addEventListener('mouseleave', stopPress);
+    function bindBoostPress(el) {
+      el.addEventListener('contextmenu', (e) => e.preventDefault());
+      el.addEventListener('dragstart', (e) => e.preventDefault());
 
-    // 触摸事件
-    boostBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      startPress();
-    }, { passive: false });
+      if (window.PointerEvent) {
+        el.addEventListener('pointerdown', (e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault();
+          // 捕获指针，按住后即使手指/鼠标移出按钮也不会中断
+          try { el.setPointerCapture(e.pointerId); } catch (err) {}
+          startPress();
+        });
+        el.addEventListener('pointerup', stopPress);
+        el.addEventListener('pointercancel', stopPress);
+        el.addEventListener('lostpointercapture', stopPress);
+        return;
+      }
 
-    boostBtn.addEventListener('touchend', stopPress);
-    boostBtn.addEventListener('touchcancel', stopPress);
+      // 旧版微信 / 安卓 X5 内核无 Pointer Events，退回 touch + mouse
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        ignoreMouseUntil = Date.now() + 800;
+        startPress();
+      }, { passive: false });
+      el.addEventListener('touchend', stopPress);
+      el.addEventListener('touchcancel', stopPress);
+
+      el.addEventListener('mousedown', (e) => {
+        if (Date.now() < ignoreMouseUntil || e.button !== 0) return;
+        e.preventDefault();
+        startPress();
+        const onMouseUp = () => {
+          stopPress();
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    if (boostTarget && progressRing) {
+      progressRing.style.strokeDasharray = String(CIRCUMFERENCE);
+      progressRing.style.strokeDashoffset = String(CIRCUMFERENCE);
+      bindBoostPress(boostTarget);
+    } else {
+      console.error('助力按钮初始化失败', { boostTarget, progressRing });
+    }
 
     // 关闭按钮
+    const IS_WECHAT = /micromessenger/i.test(navigator.userAgent);
+
+    function wechatClose() {
+      if (typeof WeixinJSBridge !== 'undefined' && WeixinJSBridge.invoke) {
+        WeixinJSBridge.invoke('closeWindow', {}, function () {});
+        return true;
+      }
+      return false;
+    }
+
     function closePage() {
-      window.open('', '_self');
+      // 微信内置浏览器：走官方 JSBridge，无需 wx.config 签名
+      if (IS_WECHAT) {
+        if (wechatClose()) return;
+        // JSBridge 尚未注入，等就绪后再关
+        document.addEventListener('WeixinJSBridgeReady', wechatClose, { once: true });
+        return;
+      }
+      // 普通浏览器：window.close() 仅能关闭由脚本打开的窗口，其余情况无反应
       window.close();
     }
 
     closeBtnBoost.addEventListener('click', closePage);
     closeBtnSuccess.addEventListener('click', closePage);
 
-    // bg.png 高度对齐 100dvh，文案底边在图片中的比例（可微调）
+    // PAGE_CONFIG.bg 高度对齐 100dvh，文案底边在图片中的比例（可微调）
     const BG_TEXT_BOTTOM_RATIO = 0.602;
     const BOOST_GAP_RATIO = 0.006;
 
@@ -495,8 +601,19 @@
 
     // ========== DEV ONLY START — 正式版删除此整块 ==========
     (function initDevClearBoost() {
-      const bottomActions = viewSuccess.querySelector('.bottom-actions');
-      if (!bottomActions) return;
+      function clearBoostState() {
+        const expired = 'Thu, 01 Jan 1970 00:00:00 GMT';
+        try {
+          document.cookie = `${COOKIE_NAME}=;expires=${expired};path=/;SameSite=Lax`;
+          document.cookie = `team_boost_success=;expires=${expired};path=/;SameSite=Lax`;
+        } catch (e) {}
+        removeStored(COOKIE_NAME);
+        document.documentElement.classList.remove('already-boosted');
+        viewSuccess.classList.remove('active');
+        viewBoost.classList.add('active');
+        stopPress();
+        resetProgress();
+      }
 
       const style = document.createElement('style');
       style.textContent = `
@@ -516,19 +633,18 @@
       `;
       document.head.appendChild(style);
 
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'dev-clear-boost-btn';
-      btn.textContent = '清除助力状态（测试）';
-      bottomActions.insertBefore(btn, closeBtnSuccess);
+      function addClearBtn(container, beforeEl) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dev-clear-boost-btn';
+        btn.textContent = '清除助力状态（测试）';
+        container.insertBefore(btn, beforeEl);
+        btn.addEventListener('click', clearBoostState);
+      }
 
-      btn.addEventListener('click', () => {
-        document.cookie = `${COOKIE_NAME}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax`;
-        document.documentElement.classList.remove('already-boosted');
-        viewSuccess.classList.remove('active');
-        viewBoost.classList.add('active');
-        resetProgress();
-      });
+      // 只在成功页提供，助力页不显示
+      const successActions = viewSuccess.querySelector('.bottom-actions');
+      if (successActions) addClearBtn(successActions, closeBtnSuccess);
     })();
     // ========== DEV ONLY END ==========
   </script>

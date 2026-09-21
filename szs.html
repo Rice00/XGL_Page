@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1628">
+  <link rel="icon" href="data:,">
+  <title>队伍助力</title>
+  <script>
+    window.PAGE_CONFIG = { key: 'szs', bg: 'szsBG.png' };
+    // file:// 打开时 document.cookie / localStorage 可能直接抛 SecurityError，
+    // 必须各自隔离，否则后面的脚本会整段中断
+    try {
+      if (
+        /team_boost_success=1(?:;|$)/.test(document.cookie) ||
+        new RegExp(`team_boost_success_${window.PAGE_CONFIG.key}=1(?:;|$)`).test(document.cookie)
+      ) {
+        document.documentElement.classList.add('already-boosted');
+      }
+    } catch (e) {}
+    try {
+      if (localStorage.getItem(`team_boost_success_${window.PAGE_CONFIG.key}`) === '1') {
+        document.documentElement.classList.add('already-boosted');
+      }
+    } catch (e) {}
+    document.documentElement.style.setProperty(
+      '--page-bg',
+      `url("${window.PAGE_CONFIG.bg}") center top / auto 100% no-repeat`
+    );
+  </script>
+  <style>
+    :root {
+      --primary: #f59e0b;
+      --primary-light: #fbbf24;
+      --primary-bg: rgba(10, 22, 40, 0.55);
+      --success: #10b981;
+      --success-light: #34d399;
+      --text: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.78);
+      --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+      --radius: 16px;
+      /* 按钮尺寸：略大于 ref 纯比例，适配实际视口 */
+      --boost-size: clamp(168px, 38vw, 227px);
+      --exit-width: clamp(168px, 48vw, 250px);
+      --exit-aspect: 5;
+      --exit-height: calc(var(--exit-width) / var(--exit-aspect));
+      --bottom-offset: clamp(64px, 11vh, 104px);
+      --actions-top: 62vh;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0a1628;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    .app {
+      width: 100%;
+      height: 100dvh;
+      position: relative;
+      overflow: hidden;
+      background: var(--page-bg);
+      background-color: #0a1628;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(5, 15, 35, 0.08) 0%,
+        rgba(5, 15, 35, 0.18) 55%,
+        rgba(5, 15, 35, 0.45) 100%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app::after {
+      display: none;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      height: 100dvh;
+      padding:
+        calc(16px + env(safe-area-inset-top))
+        20px
+        env(safe-area-inset-bottom);
+      position: relative;
+      z-index: 1;
+    }
+
+    .view-success {
+      padding-bottom: calc(var(--bottom-offset) + env(safe-area-inset-bottom));
+      background: url("succes_bg.png") center top / auto 100% no-repeat;
+      background-color: #0a1628;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    .view-body {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .bottom-actions {
+      flex-shrink: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(4px, 0.5vh, 8px);
+    }
+
+    .view-boost .bottom-actions {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--actions-top);
+      margin-top: 0;
+      z-index: 2;
+    }
+
+    .view-success .bottom-actions {
+      margin-top: auto;
+    }
+
+    html.already-boosted .view-boost {
+      display: none !important;
+    }
+
+    html.already-boosted .view-success {
+      display: flex !important;
+    }
+
+    html.already-boosted .app::before {
+      display: none;
+    }
+
+    /* 长按助力区域 */
+    .boost-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      width: 100%;
+    }
+
+    .boost-hint {
+      margin-top: clamp(4px, 0.6vh, 8px);
+      font-size: clamp(11px, 1.5vh, 13px);
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    .boost-ring-container {
+      position: relative;
+      width: var(--boost-size);
+      height: var(--boost-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .boost-ring-container::before {
+      content: "";
+      position: absolute;
+      width: 90%;
+      height: 90%;
+      border-radius: 50%;
+      border: 2px solid rgba(245, 158, 11, 0.25);
+      animation: pulse-ring 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.06); opacity: 0.2; }
+    }
+
+    .boost-ring {
+      position: absolute;
+      inset: 5%;
+      width: 90%;
+      height: 90%;
+      transform: rotate(-90deg);
+      pointer-events: none;
+    }
+
+    .boost-ring circle {
+      fill: none;
+      stroke-width: 5;
+    }
+
+    .boost-ring .track {
+      stroke: rgba(245, 158, 11, 0.2);
+    }
+
+    .boost-ring .progress {
+      stroke: url(#progressGradient);
+      stroke-dasharray: 565.48;
+      stroke-dashoffset: 565.48;
+      transition: stroke-dashoffset 0.05s linear;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+    }
+
+    .boost-btn {
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      padding: 0;
+      z-index: 1;
+      transition: transform 0.15s;
+    }
+
+    .boost-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .boost-btn:active,
+    .boost-btn.pressing {
+      transform: scale(0.94);
+    }
+
+    /* ===== 图2：成功页 ===== */
+    .success-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      pointer-events: none;
+    }
+
+    .success-image {
+      width: clamp(220px, 62vw, 360px);
+      height: auto;
+      object-fit: contain;
+      transform: translateY(-50%);
+    }
+
+    .view-success.active .success-image {
+      animation: successFadeIn 0.5s ease both;
+    }
+
+    @keyframes successFadeIn {
+      from { opacity: 0; transform: translateY(-50%) scale(0.92); }
+      to { opacity: 1; transform: translateY(-50%) scale(1); }
+    }
+
+    /* ===== 关闭按钮 ===== */
+    .close-btn {
+      width: var(--exit-width);
+      height: auto;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      box-shadow: none;
+      flex-shrink: 0;
+    }
+
+    .close-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+    }
+
+    .close-btn:active {
+      transform: scale(0.97);
+      opacity: 0.88;
+    }
+
+    .view-success .close-btn:active {
+      opacity: 0.88;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <!-- 图1：助力页 -->
+    <div class="view view-boost active" id="viewBoost">
+      <div class="bottom-actions">
+        <div class="boost-area">
+          <div class="boost-ring-container">
+            <svg class="boost-ring" viewBox="0 0 200 200">
+              <defs>
+                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#f59e0b" />
+                  <stop offset="100%" stop-color="#fbbf24" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="100" cy="100" r="90" />
+              <circle class="progress" id="progressRing" cx="100" cy="100" r="90" />
+            </svg>
+            <button type="button" class="boost-btn" id="boostBtn" aria-label="长按为他助力">
+              <img src="btn.png" alt="助力">
+            </button>
+          </div>
+          <p class="boost-hint">长按 2 秒完成助力</p>
+        </div>
+
+        <button class="close-btn" id="closeBtnBoost" aria-label="退出">
+          <img src="exit.png" alt="退出">
+        </button>
+      </div>
+    </div>
+
+    <!-- 图2：成功页 -->
+    <div class="view view-success" id="viewSuccess">
+      <div class="success-center">
+        <img src="succes.png" alt="助力成功" class="success-image" id="successImage">
+      </div>
+
+      <div class="bottom-actions">
+        <button class="close-btn" id="closeBtnSuccess" aria-label="退出">
+          <img src="exit.png" alt="退出">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const viewBoost = document.getElementById('viewBoost');
+    const viewSuccess = document.getElementById('viewSuccess');
+    const boostBtn = document.getElementById('boostBtn');
+    const boostTarget = document.querySelector('.boost-ring-container');
+    const progressRing = document.getElementById('progressRing');
+    const closeBtnBoost = document.getElementById('closeBtnBoost');
+    const closeBtnSuccess = document.getElementById('closeBtnSuccess');
+    const successImage = document.getElementById('successImage');
+
+    const PAGE_CONFIG = window.PAGE_CONFIG || { key: 'szs', bg: 'szsBG.png' };
+    const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
+    const HOLD_DURATION = 2000; // 长按 2 秒完成助力
+    const COOKIE_NAME = `team_boost_success_${PAGE_CONFIG.key}`;
+    const COOKIE_DAYS = 365;
+
+    let pressStartTime = null;
+    let isPressing = false;
+    let ignoreMouseUntil = 0;
+
+    function setCookie(name, value, days) {
+      try {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+      } catch (e) {}
+    }
+
+    function getCookie(name) {
+      try {
+        const match = document.cookie.match(
+          new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
+        );
+        return match ? decodeURIComponent(match[1]) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // file:// 下 Cookie 不可用（读写都可能抛异常），用 localStorage 兜底
+    function getStored(name) {
+      try { return localStorage.getItem(name); } catch (e) { return null; }
+    }
+
+    function setStored(name, value) {
+      try { localStorage.setItem(name, value); } catch (e) {}
+    }
+
+    function removeStored(name) {
+      try { localStorage.removeItem(name); } catch (e) {}
+    }
+
+    function hasBoosted() {
+      return getCookie(COOKIE_NAME) === '1'
+        || getCookie('team_boost_success') === '1'
+        || getStored(COOKIE_NAME) === '1';
+    }
+
+    function markBoosted() {
+      setCookie(COOKIE_NAME, '1', COOKIE_DAYS);
+      setStored(COOKIE_NAME, '1');
+      document.documentElement.classList.add('already-boosted');
+    }
+
+    function replaySuccessAnimation() {
+      if (!successImage) return;
+      successImage.style.animation = 'none';
+      void successImage.offsetWidth;
+      successImage.style.animation = '';
+    }
+
+    function initView() {
+      if (hasBoosted()) {
+        viewBoost.classList.remove('active');
+        viewSuccess.classList.add('active');
+        replaySuccessAnimation();
+      }
+    }
+
+    // 即使读取助力状态失败，也不能影响下面长按事件的绑定
+    try {
+      initView();
+    } catch (e) {
+      console.error('读取助力状态失败，按未助力处理', e);
+    }
+
+    let pressTimer = null;
+
+    function setProgress(ratio) {
+      if (!progressRing) return;
+      const offset = CIRCUMFERENCE * (1 - Math.min(ratio, 1));
+      progressRing.style.strokeDashoffset = String(offset);
+    }
+
+    function resetProgress() {
+      setProgress(0);
+      boostBtn?.classList.remove('pressing');
+    }
+
+    function showSuccess() {
+      markBoosted();
+      viewBoost.classList.remove('active');
+      viewSuccess.classList.add('active');
+      resetProgress();
+      replaySuccessAnimation();
+    }
+
+    function tickPress() {
+      if (!isPressing) return;
+      const ratio = (Date.now() - pressStartTime) / HOLD_DURATION;
+      setProgress(ratio);
+      if (ratio >= 1) {
+        clearInterval(pressTimer);
+        pressTimer = null;
+        isPressing = false;
+        boostBtn?.classList.remove('pressing');
+        showSuccess();
+      }
+    }
+
+    function startPress() {
+      if (isPressing || !boostBtn || !progressRing) return;
+      if (viewBoost.classList.contains('active') === false) return;
+      isPressing = true;
+      pressStartTime = Date.now();
+      boostBtn.classList.add('pressing');
+      clearInterval(pressTimer);
+      tickPress();
+      pressTimer = setInterval(tickPress, 16);
+    }
+
+    function stopPress() {
+      if (!isPressing) return;
+      isPressing = false;
+      clearInterval(pressTimer);
+      pressTimer = null;
+      if (!viewSuccess.classList.contains('active')) {
+        resetProgress();
+      }
+    }
+
+    function bindBoostPress(el) {
+      el.addEventListener('contextmenu', (e) => e.preventDefault());
+      el.addEventListener('dragstart', (e) => e.preventDefault());
+
+      if (window.PointerEvent) {
+        el.addEventListener('pointerdown', (e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault();
+          // 捕获指针，按住后即使手指/鼠标移出按钮也不会中断
+          try { el.setPointerCapture(e.pointerId); } catch (err) {}
+          startPress();
+        });
+        el.addEventListener('pointerup', stopPress);
+        el.addEventListener('pointercancel', stopPress);
+        el.addEventListener('lostpointercapture', stopPress);
+        return;
+      }
+
+      // 旧版微信 / 安卓 X5 内核无 Pointer Events，退回 touch + mouse
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        ignoreMouseUntil = Date.now() + 800;
+        startPress();
+      }, { passive: false });
+      el.addEventListener('touchend', stopPress);
+      el.addEventListener('touchcancel', stopPress);
+
+      el.addEventListener('mousedown', (e) => {
+        if (Date.now() < ignoreMouseUntil || e.button !== 0) return;
+        e.preventDefault();
+        startPress();
+        const onMouseUp = () => {
+          stopPress();
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    if (boostTarget && progressRing) {
+      progressRing.style.strokeDasharray = String(CIRCUMFERENCE);
+      progressRing.style.strokeDashoffset = String(CIRCUMFERENCE);
+      bindBoostPress(boostTarget);
+    } else {
+      console.error('助力按钮初始化失败', { boostTarget, progressRing });
+    }
+
+    // 关闭按钮
+    const IS_WECHAT = /micromessenger/i.test(navigator.userAgent);
+
+    function wechatClose() {
+      if (typeof WeixinJSBridge !== 'undefined' && WeixinJSBridge.invoke) {
+        WeixinJSBridge.invoke('closeWindow', {}, function () {});
+        return true;
+      }
+      return false;
+    }
+
+    function closePage() {
+      // 微信内置浏览器：走官方 JSBridge，无需 wx.config 签名
+      if (IS_WECHAT) {
+        if (wechatClose()) return;
+        // JSBridge 尚未注入，等就绪后再关
+        document.addEventListener('WeixinJSBridgeReady', wechatClose, { once: true });
+        return;
+      }
+      // 普通浏览器：window.close() 仅能关闭由脚本打开的窗口，其余情况无反应
+      window.close();
+    }
+
+    closeBtnBoost.addEventListener('click', closePage);
+    closeBtnSuccess.addEventListener('click', closePage);
+
+    // PAGE_CONFIG.bg 高度对齐 100dvh，文案底边在图片中的比例（可微调）
+    const BG_TEXT_BOTTOM_RATIO = 0.602;
+    const BOOST_GAP_RATIO = 0.006;
+
+    function syncBoostActionsPosition() {
+      const vh = window.innerHeight;
+      const actionsTop = vh * (BG_TEXT_BOTTOM_RATIO + BOOST_GAP_RATIO);
+      document.documentElement.style.setProperty('--actions-top', `${actionsTop}px`);
+    }
+
+    syncBoostActionsPosition();
+    window.addEventListener('load', syncBoostActionsPosition);
+    window.addEventListener('resize', syncBoostActionsPosition);
+
+    // ========== DEV ONLY START — 正式版删除此整块 ==========
+    (function initDevClearBoost() {
+      function clearBoostState() {
+        const expired = 'Thu, 01 Jan 1970 00:00:00 GMT';
+        try {
+          document.cookie = `${COOKIE_NAME}=;expires=${expired};path=/;SameSite=Lax`;
+          document.cookie = `team_boost_success=;expires=${expired};path=/;SameSite=Lax`;
+        } catch (e) {}
+        removeStored(COOKIE_NAME);
+        document.documentElement.classList.remove('already-boosted');
+        viewSuccess.classList.remove('active');
+        viewBoost.classList.add('active');
+        stopPress();
+        resetProgress();
+      }
+
+      const style = document.createElement('style');
+      style.textContent = `
+        .dev-clear-boost-btn {
+          width: var(--exit-width);
+          height: 38px;
+          border: 1px dashed #e07a7a;
+          background: rgba(255, 245, 245, 0.92);
+          border-radius: 20px;
+          font-size: 14px;
+          color: #c0392b;
+          cursor: pointer;
+        }
+        .dev-clear-boost-btn:active {
+          background: #ffe8e8;
+        }
+      `;
+      document.head.appendChild(style);
+
+      function addClearBtn(container, beforeEl) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dev-clear-boost-btn';
+        btn.textContent = '清除助力状态（测试）';
+        container.insertBefore(btn, beforeEl);
+        btn.addEventListener('click', clearBoostState);
+      }
+
+      // 只在成功页提供，助力页不显示
+      const successActions = viewSuccess.querySelector('.bottom-actions');
+      if (successActions) addClearBtn(successActions, closeBtnSuccess);
+    })();
+    // ========== DEV ONLY END ==========
+  </script>
+</body>
+</html>
