@@ -202,6 +202,12 @@
       pointer-events: none;
     }
 
+    /* 长按期间停掉呼吸动画，把渲染开销全留给进度环 */
+    .boost-ring-container.is-pressing::before {
+      animation: none;
+      opacity: 0.3;
+    }
+
     @keyframes pulse-ring {
       0%, 100% { transform: scale(1); opacity: 0.6; }
       50% { transform: scale(1.06); opacity: 0.2; }
@@ -229,9 +235,7 @@
       stroke: url(#progressGradient);
       stroke-dasharray: 565.48;
       stroke-dashoffset: 565.48;
-      transition: stroke-dashoffset 0.05s linear;
       stroke-linecap: round;
-      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
     }
 
     .boost-btn {
@@ -457,17 +461,23 @@
       console.error('读取助力状态失败，按未助力处理', e);
     }
 
-    let pressTimer = null;
+    const raf = (window.requestAnimationFrame && window.requestAnimationFrame.bind(window))
+      || function (cb) { return setTimeout(cb, 16); };
+    const caf = (window.cancelAnimationFrame && window.cancelAnimationFrame.bind(window))
+      || clearTimeout;
+
+    let rafId = null;
 
     function setProgress(ratio) {
       if (!progressRing) return;
       const offset = CIRCUMFERENCE * (1 - Math.min(ratio, 1));
-      progressRing.style.strokeDashoffset = String(offset);
+      progressRing.style.strokeDashoffset = offset.toFixed(2);
     }
 
     function resetProgress() {
       setProgress(0);
       boostBtn?.classList.remove('pressing');
+      boostTarget?.classList.remove('is-pressing');
     }
 
     function showSuccess() {
@@ -478,17 +488,20 @@
       replaySuccessAnimation();
     }
 
+    // 跟随屏幕刷新逐帧推进，避免 setInterval 与 vsync 错拍导致的一卡一卡
     function tickPress() {
       if (!isPressing) return;
       const ratio = (Date.now() - pressStartTime) / HOLD_DURATION;
       setProgress(ratio);
       if (ratio >= 1) {
-        clearInterval(pressTimer);
-        pressTimer = null;
+        rafId = null;
         isPressing = false;
         boostBtn?.classList.remove('pressing');
+        boostTarget?.classList.remove('is-pressing');
         showSuccess();
+        return;
       }
+      rafId = raf(tickPress);
     }
 
     function startPress() {
@@ -497,16 +510,19 @@
       isPressing = true;
       pressStartTime = Date.now();
       boostBtn.classList.add('pressing');
-      clearInterval(pressTimer);
-      tickPress();
-      pressTimer = setInterval(tickPress, 16);
+      boostTarget?.classList.add('is-pressing');
+      if (rafId) caf(rafId);
+      setProgress(0);
+      rafId = raf(tickPress);
     }
 
     function stopPress() {
       if (!isPressing) return;
       isPressing = false;
-      clearInterval(pressTimer);
-      pressTimer = null;
+      if (rafId) {
+        caf(rafId);
+        rafId = null;
+      }
       if (!viewSuccess.classList.contains('active')) {
         resetProgress();
       }
