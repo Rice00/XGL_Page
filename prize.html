@@ -430,9 +430,22 @@
     }
 
     function showPage(index) {
+      // 切页时隐藏非当前抽奖页的号码，避免数字残留
+      PRIZE_KEYS.forEach((key, i) => {
+        const prizePageIndex = i + 1;
+        if (index === 0 || prizePageIndex !== index) {
+          hidePrizeOnPageLeave(prizeStates[key]);
+        }
+      });
+
       PAGE_IDS.forEach((id, i) => {
         document.getElementById(id).classList.toggle('active', i === index);
       });
+
+      if (index >= 1 && index <= 3) {
+        showPrizeOnPageEnter(prizeStates[PRIZE_KEYS[index - 1]]);
+      }
+
       currentPage = index;
     }
 
@@ -464,6 +477,32 @@
       rangeMin = min;
       rangeMax = max;
       return true;
+    }
+
+    function hidePrizeOnPageLeave(state) {
+      clearPrizeTimers(state);
+
+      if (state.phase === 'done') {
+        // 已完成开奖：只隐藏号码，已占用的号码不回收到号码池
+        state.slots.forEach((slot) => {
+          slot.el.textContent = '';
+          slot.el.className = 'prize-number is-hidden';
+        });
+        setPrizeBtnVisible(state, false);
+        return;
+      }
+
+      resetPrizeState(state);
+    }
+
+    function showPrizeOnPageEnter(state) {
+      if (state.phase !== 'done') return;
+
+      state.slots.forEach((slot) => {
+        slot.el.textContent = slot.value;
+        slot.el.className = 'prize-number is-fixed';
+      });
+      setPrizeBtnVisible(state, false);
     }
 
     function resetPrizeState(state) {
