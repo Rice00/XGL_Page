@@ -291,16 +291,16 @@
             </div>
             <div class="settings-row">
               <label for="inputMax1">上限</label>
-              <input id="inputMax1" type="number" value="500" min="1" data-sync="max1">
+              <input id="inputMax1" type="number" value="200" min="1" data-sync="max1">
             </div>
             <p class="settings-section-label">区间 2</p>
             <div class="settings-row">
               <label for="inputMin2">下限</label>
-              <input id="inputMin2" type="number" value="501" min="1" data-sync="min2">
+              <input id="inputMin2" type="number" value="201" min="1" data-sync="min2">
             </div>
             <div class="settings-row">
               <label for="inputMax2">上限</label>
-              <input id="inputMax2" type="number" value="1000" min="1" data-sync="max2">
+              <input id="inputMax2" type="number" value="600" min="1" data-sync="max2">
             </div>
             <p class="settings-hint">两个区间均为左右闭区间 [下限, 上限]。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
             <button class="confirm-btn" type="button">确认</button>
@@ -349,16 +349,16 @@
             </div>
             <div class="settings-row">
               <label>上限</label>
-              <input type="number" value="500" min="1" data-sync="max1">
+              <input type="number" value="200" min="1" data-sync="max1">
             </div>
             <p class="settings-section-label">区间 2</p>
             <div class="settings-row">
               <label>下限</label>
-              <input type="number" value="501" min="1" data-sync="min2">
+              <input type="number" value="201" min="1" data-sync="min2">
             </div>
             <div class="settings-row">
               <label>上限</label>
-              <input type="number" value="1000" min="1" data-sync="max2">
+              <input type="number" value="600" min="1" data-sync="max2">
             </div>
             <p class="settings-hint">两个区间均为左右闭区间 [下限, 上限]。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
             <button class="confirm-btn" type="button">确认</button>
@@ -403,6 +403,7 @@
     const STAGGER_INTERVAL = 500;
     const LAND_STEPS = 8;
     const LAND_INTERVAL = 55;
+    const NUMBER_PAD = 3;
 
     const PRIZE_KEYS = ['3', '2', '1'];
     const PRELOAD_ASSETS = ['wide-prizeBG.png', 'prizeBtn.png'];
@@ -412,8 +413,8 @@
 
     let currentPage = 0;
     let ranges = [
-      { min: 1, max: 500 },
-      { min: 501, max: 1000 },
+      { min: 1, max: 200 },
+      { min: 201, max: 600 },
     ];
     let usedNumbers = new Set();
 
@@ -464,8 +465,15 @@
       forEachSlotEl(slot, (el) => { el.className = className; });
     }
 
+    function formatPrizeNumber(n) {
+      return String(n).padStart(NUMBER_PAD, '0');
+    }
+
     function setSlotText(slot, text) {
-      forEachSlotEl(slot, (el) => { el.textContent = text; });
+      const display = text === '' || text === null || text === undefined
+        ? ''
+        : formatPrizeNumber(text);
+      forEachSlotEl(slot, (el) => { el.textContent = display; });
     }
 
     function setPrizeBtnVisible(state, visible) {

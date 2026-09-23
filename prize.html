@@ -285,16 +285,16 @@
           </div>
           <div class="settings-row">
             <label for="inputMax1">上限</label>
-            <input id="inputMax1" type="number" value="500" min="1">
+            <input id="inputMax1" type="number" value="200" min="1">
           </div>
           <p class="settings-section-label">区间 2</p>
           <div class="settings-row">
             <label for="inputMin2">下限</label>
-            <input id="inputMin2" type="number" value="501" min="1">
+            <input id="inputMin2" type="number" value="201" min="1">
           </div>
           <div class="settings-row">
             <label for="inputMax2">上限</label>
-            <input id="inputMax2" type="number" value="1000" min="1">
+            <input id="inputMax2" type="number" value="600" min="1">
           </div>
           <p class="settings-hint">两个区间均为左右闭区间 [下限, 上限]。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
           <button class="confirm-btn" id="confirmBtn" type="button">确认</button>
@@ -342,6 +342,7 @@
     const STAGGER_INTERVAL = 500; // 依次固定间隔（毫秒）
     const LAND_STEPS = 8;
     const LAND_INTERVAL = 55;
+    const NUMBER_PAD = 3;
 
     const PAGE_IDS = ['viewSettings', 'viewPrize3', 'viewPrize2', 'viewPrize1'];
     const PRIZE_KEYS = ['3', '2', '1'];
@@ -357,8 +358,8 @@
 
     let currentPage = 0;
     let ranges = [
-      { min: 1, max: 500 },
-      { min: 501, max: 1000 },
+      { min: 1, max: 200 },
+      { min: 201, max: 600 },
     ];
     let usedNumbers = new Set();
 
@@ -421,6 +422,17 @@
             })
         )
       );
+    }
+
+    function formatPrizeNumber(n) {
+      return String(n).padStart(NUMBER_PAD, '0');
+    }
+
+    function setSlotDisplay(slot, value) {
+      const text = value === '' || value === null || value === undefined
+        ? ''
+        : formatPrizeNumber(value);
+      slot.el.textContent = text;
     }
 
     function buildPoolFromRanges(rangeList, excludeUsed = false) {
@@ -541,7 +553,7 @@
       if (state.phase !== 'done') return;
 
       state.slots.forEach((slot) => {
-        slot.el.textContent = slot.value;
+        setSlotDisplay(slot, slot.value);
         slot.el.className = 'prize-number is-fixed';
       });
       setPrizeBtnVisible(state, false);
@@ -601,7 +613,7 @@
       slot.landTimer = setInterval(() => {
         step++;
         if (step < LAND_STEPS - 1) {
-          slot.el.textContent = randomFromRanges();
+          setSlotDisplay(slot, randomFromRanges());
           return;
         }
 
@@ -609,7 +621,7 @@
         slot.landTimer = null;
         slot.value = finalValue;
         slot.fixed = true;
-        slot.el.textContent = finalValue;
+        setSlotDisplay(slot, finalValue);
         slot.el.className = 'prize-number is-fixed';
         onComplete?.();
       }, LAND_INTERVAL);
@@ -622,9 +634,9 @@
         slot.fixed = false;
         slot.value = null;
         slot.el.className = 'prize-number is-rolling';
-        slot.el.textContent = randomFromRanges();
+        setSlotDisplay(slot, randomFromRanges());
         slot.timer = setInterval(() => {
-          slot.el.textContent = randomFromRanges();
+          setSlotDisplay(slot, randomFromRanges());
         }, ROLL_INTERVAL);
       });
     }
