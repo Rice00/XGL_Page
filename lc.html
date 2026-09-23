@@ -586,6 +586,23 @@
       return false;
     }
 
+    function browserClose() {
+      // 1. 直接关（适用于 window.open / target=_blank 打开的页面）
+      window.opener = null;
+      window.close();
+
+      // 2. 经典组合：部分桌面/移动浏览器需要 _self hack 才能关标签
+      window.open('', '_self');
+      window.close();
+
+      // 3. 仍未关闭时退回上一页（从其它页面跳转进来的常见场景）
+      setTimeout(function () {
+        if (history.length > 1) {
+          history.back();
+        }
+      }, 120);
+    }
+
     function closePage() {
       // 微信内置浏览器：走官方 JSBridge，无需 wx.config 签名
       if (IS_WECHAT) {
@@ -594,8 +611,7 @@
         document.addEventListener('WeixinJSBridgeReady', wechatClose, { once: true });
         return;
       }
-      // 普通浏览器：window.close() 仅能关闭由脚本打开的窗口，其余情况无反应
-      window.close();
+      browserClose();
     }
 
     closeBtnBoost.addEventListener('click', closePage);
