@@ -131,6 +131,17 @@
       box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
     }
 
+    .settings-section-label {
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 12px;
+    }
+
+    .settings-section-label + .settings-section-label {
+      margin-top: 24px;
+    }
+
     .settings-hint {
       font-size: 18px;
       color: rgba(255, 255, 255, 0.45);
@@ -267,18 +278,28 @@
         <h1 class="settings-title">随机抽奖</h1>
         <p class="settings-subtitle">配置号码范围后开始抽奖</p>
         <div class="settings-card">
+          <p class="settings-section-label">区间 1</p>
           <div class="settings-row">
-            <label for="inputMin">下限</label>
-            <input id="inputMin" type="number" value="1" min="1">
+            <label for="inputMin1">下限</label>
+            <input id="inputMin1" type="number" value="1" min="1">
           </div>
           <div class="settings-row">
-            <label for="inputMax">上限</label>
-            <input id="inputMax" type="number" value="500" min="1">
+            <label for="inputMax1">上限</label>
+            <input id="inputMax1" type="number" value="500" min="1">
           </div>
-          <p class="settings-hint">范围包含上下限。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
+          <p class="settings-section-label">区间 2</p>
+          <div class="settings-row">
+            <label for="inputMin2">下限</label>
+            <input id="inputMin2" type="number" value="501" min="1">
+          </div>
+          <div class="settings-row">
+            <label for="inputMax2">上限</label>
+            <input id="inputMax2" type="number" value="1000" min="1">
+          </div>
+          <p class="settings-hint">两个区间均为左右闭区间 [下限, 上限]。三等奖 5 个、二等奖 3 个、一等奖 1 个，共 9 个号码且不重复。</p>
           <button class="confirm-btn" id="confirmBtn" type="button">确认</button>
         </div>
-        <p class="key-hint">Z / ← 上一页　X / → 下一页<br>设置页 / 抽奖页：空格 = 确认 / 开奖 / 定格</p>
+        <p class="key-hint">Z / ← 上一页　X / → 下一页<br>设置页：空格 = 确认　抽奖页：空格 = 开奖 / 定格</p>
       </section>
 
       <!-- 页面2：三等奖 -->
@@ -332,13 +353,13 @@
     ];
 
     const stage = document.getElementById('stage');
-    const inputMin = document.getElementById('inputMin');
-    const inputMax = document.getElementById('inputMax');
     const confirmBtn = document.getElementById('confirmBtn');
 
     let currentPage = 0;
-    let rangeMin = 1;
-    let rangeMax = 500;
+    let ranges = [
+      { min: 1, max: 500 },
+      { min: 501, max: 1000 },
+    ];
     let usedNumbers = new Set();
 
     const prizeStates = {
@@ -402,16 +423,28 @@
       );
     }
 
-    function randomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+    function buildPoolFromRanges(rangeList, excludeUsed = false) {
+      const seen = new Set();
+      const list = [];
+      rangeList.forEach(({ min, max }) => {
+        for (let i = min; i <= max; i++) {
+          if (seen.has(i)) continue;
+          if (excludeUsed && usedNumbers.has(i)) continue;
+          seen.add(i);
+          list.push(i);
+        }
+      });
+      return list;
+    }
+
+    function randomFromRanges() {
+      const pool = buildPoolFromRanges(ranges, false);
+      if (!pool.length) return ranges[0].min;
+      return pool[Math.floor(Math.random() * pool.length)];
     }
 
     function getAvailableNumbers() {
-      const list = [];
-      for (let i = rangeMin; i <= rangeMax; i++) {
-        if (!usedNumbers.has(i)) list.push(i);
-      }
-      return list;
+      return buildPoolFromRanges(ranges, true);
     }
 
     function pickUnique(count) {
@@ -458,24 +491,33 @@
     }
 
     function readRange() {
-      const min = parseInt(inputMin.value, 10);
-      const max = parseInt(inputMax.value, 10);
+      const nextRanges = [
+        {
+          min: parseInt(document.getElementById('inputMin1').value, 10),
+          max: parseInt(document.getElementById('inputMax1').value, 10),
+        },
+        {
+          min: parseInt(document.getElementById('inputMin2').value, 10),
+          max: parseInt(document.getElementById('inputMax2').value, 10),
+        },
+      ];
 
-      if (Number.isNaN(min) || Number.isNaN(max)) {
+      if (nextRanges.some(({ min, max }) => Number.isNaN(min) || Number.isNaN(max))) {
         alert('请输入有效的数字范围');
         return false;
       }
-      if (min > max) {
-        alert('下限不能大于上限');
-        return false;
-      }
-      if (max - min + 1 < 9) {
-        alert('范围内至少需要有 9 个不重复号码（三等奖5 + 二等奖3 + 一等奖1）');
+      if (nextRanges.some(({ min, max }) => min > max)) {
+        alert('每个区间的下限不能大于上限');
         return false;
       }
 
-      rangeMin = min;
-      rangeMax = max;
+      const poolSize = buildPoolFromRanges(nextRanges, false).length;
+      if (poolSize < 9) {
+        alert(`两个区间合计至少需要有 9 个不重复号码（当前 ${poolSize} 个）`);
+        return false;
+      }
+
+      ranges = nextRanges;
       return true;
     }
 
@@ -559,7 +601,7 @@
       slot.landTimer = setInterval(() => {
         step++;
         if (step < LAND_STEPS - 1) {
-          slot.el.textContent = randomInt(rangeMin, rangeMax);
+          slot.el.textContent = randomFromRanges();
           return;
         }
 
@@ -580,9 +622,9 @@
         slot.fixed = false;
         slot.value = null;
         slot.el.className = 'prize-number is-rolling';
-        slot.el.textContent = randomInt(rangeMin, rangeMax);
+        slot.el.textContent = randomFromRanges();
         slot.timer = setInterval(() => {
-          slot.el.textContent = randomInt(rangeMin, rangeMax);
+          slot.el.textContent = randomFromRanges();
         }, ROLL_INTERVAL);
       });
     }
@@ -616,8 +658,6 @@
         startRolling(state);
       } else if (state.phase === 'rolling') {
         startFixing(state);
-      } else if (state.phase === 'done') {
-        nextPage();
       }
     }
 
