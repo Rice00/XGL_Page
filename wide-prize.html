@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=5386, height=1843, initial-scale=1.0">
   <title>随机抽奖（宽屏）</title>
   <link rel="preload" as="image" href="wide-prizeBG.png">
-  <link rel="preload" as="image" href="wide-prizeBG-3.png">
-  <link rel="preload" as="image" href="wide-prizeBG-2.png">
-  <link rel="preload" as="image" href="wide-prizeBG-1.png">
+  <link rel="preload" as="image" href="prizeText-3.png">
+  <link rel="preload" as="image" href="prizeText-2.png">
+  <link rel="preload" as="image" href="prizeText-1.png">
   <link rel="preload" as="image" href="prizeBtn.png">
   <style>
     :root {
@@ -52,16 +52,12 @@
       background: #0a1628;
     }
 
-    /* 四层背景常驻 DOM，切页只改 z-index，避免换 background-image 闪烁 */
+    /* 整屏通用背景（不随页面切换） */
     .stage-bg {
       position: absolute;
       inset: 0;
       z-index: 0;
       pointer-events: none;
-    }
-
-    .stage-bg.is-active {
-      z-index: 1;
     }
 
     .stage-bg img {
@@ -80,6 +76,39 @@
       z-index: 2;
     }
 
+    /* 竖屏文案图：多层常驻，切页只改 z-index */
+    .side-text-stack {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .prize-text-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    .prize-text-layer.is-active {
+      visibility: visible;
+      opacity: 1;
+      z-index: 1;
+    }
+
+    .prize-text-layer img {
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      display: block;
+      transform: translateY(170%);
+    }
+
     .side-left { left: 0; }
     .side-right { right: 0; }
 
@@ -90,13 +119,13 @@
       inset: 0;
       visibility: hidden;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
     }
 
     .view.active {
       visibility: visible;
       pointer-events: auto;
-      z-index: 1;
+      z-index: 2;
     }
 
     /* ===== 设置页 ===== */
@@ -208,7 +237,7 @@
       line-height: 1.8;
     }
 
-    /* ===== 抽奖页（竖屏内容区，背景由整屏 wide-prizeBG / wide-prizeBG-x 提供） ===== */
+    /* ===== 抽奖页（竖屏文案 prizeText-x + 号码/按钮叠在上层） ===== */
     .view-prize {
       background: transparent;
     }
@@ -301,21 +330,23 @@
 <body>
   <div class="viewport">
     <div class="stage" id="stage">
-      <div class="stage-bg is-active" data-page="0">
+      <div class="stage-bg">
         <img src="wide-prizeBG.png" alt="" decoding="async">
-      </div>
-      <div class="stage-bg" data-page="1">
-        <img src="wide-prizeBG-3.png" alt="" decoding="async">
-      </div>
-      <div class="stage-bg" data-page="2">
-        <img src="wide-prizeBG-2.png" alt="" decoding="async">
-      </div>
-      <div class="stage-bg" data-page="3">
-        <img src="wide-prizeBG-1.png" alt="" decoding="async">
       </div>
 
       <!-- 左侧竖屏 992×1843 -->
       <div class="side-panel side-left" id="panelLeft">
+        <div class="side-text-stack" aria-hidden="true">
+          <div class="prize-text-layer" data-page="1">
+            <img src="prizeText-3.png" alt="" decoding="async">
+          </div>
+          <div class="prize-text-layer" data-page="2">
+            <img src="prizeText-2.png" alt="" decoding="async">
+          </div>
+          <div class="prize-text-layer" data-page="3">
+            <img src="prizeText-1.png" alt="" decoding="async">
+          </div>
+        </div>
         <section class="view view-settings active" data-page="0">
           <h1 class="settings-title">随机抽奖</h1>
           <p class="settings-subtitle">配置号码范围后开始抽奖</p>
@@ -374,6 +405,17 @@
 
       <!-- 右侧竖屏 992×1843 -->
       <div class="side-panel side-right" id="panelRight">
+        <div class="side-text-stack" aria-hidden="true">
+          <div class="prize-text-layer" data-page="1">
+            <img src="prizeText-3.png" alt="" decoding="async">
+          </div>
+          <div class="prize-text-layer" data-page="2">
+            <img src="prizeText-2.png" alt="" decoding="async">
+          </div>
+          <div class="prize-text-layer" data-page="3">
+            <img src="prizeText-1.png" alt="" decoding="async">
+          </div>
+        </div>
         <section class="view view-settings active" data-page="0">
           <h1 class="settings-title">随机抽奖</h1>
           <p class="settings-subtitle">配置号码范围后开始抽奖</p>
@@ -442,17 +484,11 @@
     const NUMBER_PAD = 3;
 
     const PRIZE_KEYS = ['3', '2', '1'];
-    const PAGE_BACKGROUNDS = {
-      0: 'wide-prizeBG.png',
-      1: 'wide-prizeBG-3.png',
-      2: 'wide-prizeBG-2.png',
-      3: 'wide-prizeBG-1.png',
-    };
     const PRELOAD_ASSETS = [
       'wide-prizeBG.png',
-      'wide-prizeBG-3.png',
-      'wide-prizeBG-2.png',
-      'wide-prizeBG-1.png',
+      'prizeText-3.png',
+      'prizeText-2.png',
+      'prizeText-1.png',
       'prizeBtn.png',
     ];
 
@@ -557,15 +593,16 @@
       );
     }
 
-    function applyStageBackground(pageIndex) {
-      stage.querySelectorAll('.stage-bg').forEach((layer) => {
-        const isActive = parseInt(layer.dataset.page, 10) === pageIndex;
+    function applyPageVisuals(pageIndex) {
+      document.querySelectorAll('.prize-text-layer').forEach((layer) => {
+        const layerPage = parseInt(layer.dataset.page, 10);
+        const isActive = layerPage === pageIndex;
         layer.classList.toggle('is-active', isActive);
       });
     }
 
-    function warmStageBackgroundImages() {
-      stage.querySelectorAll('.stage-bg img').forEach((img) => {
+    function warmPageImages() {
+      stage.querySelectorAll('.stage-bg img, .prize-text-layer img').forEach((img) => {
         const url = img.getAttribute('src');
         if (url) preloadedImages.set(url, img);
         if (img.complete && img.decode) {
@@ -630,7 +667,7 @@
         showPrizeOnPageEnter(prizeStates[PRIZE_KEYS[index - 1]]);
       }
 
-      applyStageBackground(index);
+      applyPageVisuals(index);
       currentPage = index;
     }
 
@@ -871,10 +908,10 @@
       }
     });
 
-    applyStageBackground(0);
+    applyPageVisuals(0);
     preloadAssets(PRELOAD_ASSETS).then(() => {
-      warmStageBackgroundImages();
-      applyStageBackground(currentPage);
+      warmPageImages();
+      applyPageVisuals(currentPage);
     });
     scaleStage();
     window.addEventListener('resize', scaleStage);
