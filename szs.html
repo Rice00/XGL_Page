@@ -10,16 +10,14 @@
     window.PAGE_CONFIG = { key: 'szs', bg: 'szsBG.webp' };
     // file:// 打开时 document.cookie / localStorage 可能直接抛 SecurityError，
     // 必须各自隔离，否则后面的脚本会整段中断
+    // 正式版：状态键统一带 _final 后缀，旧版残留的助力状态一律不再识别
     try {
-      if (
-        /team_boost_success=1(?:;|$)/.test(document.cookie) ||
-        new RegExp(`team_boost_success_${window.PAGE_CONFIG.key}=1(?:;|$)`).test(document.cookie)
-      ) {
+      if (new RegExp(`team_boost_success_${window.PAGE_CONFIG.key}_final=1(?:;|$)`).test(document.cookie)) {
         document.documentElement.classList.add('already-boosted');
       }
     } catch (e) {}
     try {
-      if (localStorage.getItem(`team_boost_success_${window.PAGE_CONFIG.key}`) === '1') {
+      if (localStorage.getItem(`team_boost_success_${window.PAGE_CONFIG.key}_final`) === '1') {
         document.documentElement.classList.add('already-boosted');
       }
     } catch (e) {}
@@ -405,7 +403,7 @@
     const PAGE_CONFIG = window.PAGE_CONFIG || { key: 'szs', bg: 'szsBG.webp' };
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
-    const COOKIE_NAME = `team_boost_success_${PAGE_CONFIG.key}`;
+    const COOKIE_NAME = `team_boost_success_${PAGE_CONFIG.key}_final`;
     const COOKIE_DAYS = 365;
 
     let pressStartTime = null;
@@ -446,7 +444,6 @@
 
     function hasBoosted() {
       return getCookie(COOKIE_NAME) === '1'
-        || getCookie('team_boost_success') === '1'
         || getStored(COOKIE_NAME) === '1';
     }
 
@@ -648,54 +645,6 @@
     window.addEventListener('load', syncBoostActionsPosition);
     window.addEventListener('resize', syncBoostActionsPosition);
 
-    // ========== DEV ONLY START — 正式版删除此整块 ==========
-    (function initDevClearBoost() {
-      function clearBoostState() {
-        const expired = 'Thu, 01 Jan 1970 00:00:00 GMT';
-        try {
-          document.cookie = `${COOKIE_NAME}=;expires=${expired};path=/;SameSite=Lax`;
-          document.cookie = `team_boost_success=;expires=${expired};path=/;SameSite=Lax`;
-        } catch (e) {}
-        removeStored(COOKIE_NAME);
-        document.documentElement.classList.remove('already-boosted');
-        viewSuccess.classList.remove('active');
-        viewBoost.classList.add('active');
-        stopPress();
-        resetProgress();
-      }
-
-      const style = document.createElement('style');
-      style.textContent = `
-        .dev-clear-boost-btn {
-          width: var(--exit-width);
-          height: 38px;
-          border: 1px dashed #e07a7a;
-          background: rgba(255, 245, 245, 0.92);
-          border-radius: 20px;
-          font-size: 14px;
-          color: #c0392b;
-          cursor: pointer;
-        }
-        .dev-clear-boost-btn:active {
-          background: #ffe8e8;
-        }
-      `;
-      document.head.appendChild(style);
-
-      function addClearBtn(container, beforeEl) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'dev-clear-boost-btn';
-        btn.textContent = '清除助力状态（测试）';
-        container.insertBefore(btn, beforeEl);
-        btn.addEventListener('click', clearBoostState);
-      }
-
-      // 只在成功页提供，助力页不显示
-      const successActions = viewSuccess.querySelector('.bottom-actions');
-      if (successActions) addClearBtn(successActions, closeBtnSuccess);
-    })();
-    // ========== DEV ONLY END ==========
   </script>
 </body>
 </html>
