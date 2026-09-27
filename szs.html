@@ -163,7 +163,11 @@
 
     .boost-page-logo {
       position: absolute;
-      top: calc(env(safe-area-inset-top) + clamp(12px, 2vh, 28px));
+      /* 贴顶定位，切勿叠加 env(safe-area-inset-top)：
+         WeChat 的 WebView 顶部本来就在状态栏之下，再叠加一次安全区会把 logo
+         整体下推约 47px，正好压到背景图里的“米修斯科技”文字上（真机复现，
+         旧版即有此问题）。桌面浏览器 env() 返回 0，所以只在手机端出问题。 */
+      top: clamp(10px, 1.6vh, 20px);
       left: 50%;
       transform: translateX(-50%);
       width: clamp(140px, 38vw, 300px);
