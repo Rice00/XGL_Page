@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <title>队伍助力</title>
   <script>
-    window.PAGE_CONFIG = { key: 'szs', bg: 'szsBG.png' };
+    window.PAGE_CONFIG = { key: 'szs', bg: 'szsBG.webp' };
     // file:// 打开时 document.cookie / localStorage 可能直接抛 SecurityError，
     // 必须各自隔离，否则后面的脚本会整段中断
     try {
@@ -110,7 +110,7 @@
 
     .view-success {
       padding-bottom: calc(var(--bottom-offset) + env(safe-area-inset-bottom));
-      background: url("succes_bg.png") center top / auto 100% no-repeat;
+      background: url("succes_bg.webp") center top / auto 100% no-repeat;
       background-color: #0a1628;
     }
 
@@ -347,7 +347,7 @@
   <div class="app">
     <!-- 图1：助力页 -->
     <div class="view view-boost active" id="viewBoost">
-      <img src="logo.png" alt="" class="boost-page-logo">
+      <img src="logo.webp" alt="" class="boost-page-logo">
       <div class="bottom-actions">
         <div class="boost-area">
           <div class="boost-ring-container">
@@ -362,14 +362,14 @@
               <circle class="progress" id="progressRing" cx="100" cy="100" r="90" />
             </svg>
             <button type="button" class="boost-btn" id="boostBtn" aria-label="长按为他助力">
-              <img src="btn.png" alt="助力">
+              <img src="btn.webp" alt="助力">
             </button>
           </div>
           <p class="boost-hint">长按 2 秒完成助力</p>
         </div>
 
         <button class="close-btn" id="closeBtnBoost" aria-label="退出">
-          <img src="exit.png" alt="退出">
+          <img src="exit.webp" alt="退出">
         </button>
       </div>
     </div>
@@ -377,12 +377,12 @@
     <!-- 图2：成功页 -->
     <div class="view view-success" id="viewSuccess">
       <div class="success-center">
-        <img src="succes.png" alt="助力成功" class="success-image" id="successImage">
+        <img src="succes.webp" alt="助力成功" class="success-image" id="successImage">
       </div>
 
       <div class="bottom-actions">
         <button class="close-btn" id="closeBtnSuccess" aria-label="退出">
-          <img src="exit.png" alt="退出">
+          <img src="exit.webp" alt="退出">
         </button>
       </div>
     </div>
@@ -398,7 +398,7 @@
     const closeBtnSuccess = document.getElementById('closeBtnSuccess');
     const successImage = document.getElementById('successImage');
 
-    const PAGE_CONFIG = window.PAGE_CONFIG || { key: 'szs', bg: 'szsBG.png' };
+    const PAGE_CONFIG = window.PAGE_CONFIG || { key: 'szs', bg: 'szsBG.webp' };
     const CIRCUMFERENCE = 2 * Math.PI * 90; // 565.48
     const HOLD_DURATION = 2000; // 长按 2 秒完成助力
     const COOKIE_NAME = `team_boost_success_${PAGE_CONFIG.key}`;
