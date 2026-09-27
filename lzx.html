@@ -161,6 +161,18 @@
       display: none;
     }
 
+    .boost-page-logo {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + clamp(12px, 2vh, 28px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(140px, 38vw, 300px);
+      height: auto;
+      z-index: 2;
+      pointer-events: none;
+      user-select: none;
+    }
+
     /* 长按助力区域 */
     .boost-area {
       display: flex;
@@ -335,6 +347,7 @@
   <div class="app">
     <!-- 图1：助力页 -->
     <div class="view view-boost active" id="viewBoost">
+      <img src="logo.png" alt="" class="boost-page-logo">
       <div class="bottom-actions">
         <div class="boost-area">
           <div class="boost-ring-container">
